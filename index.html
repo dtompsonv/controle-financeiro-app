@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controle Financeiro Desktop</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">CF</span>
+        <div>
+          <strong>Controle Financeiro</strong>
+          <p>Visao mensal do seu desktop</p>
+        </div>
+      </div>
+
+      <nav class="menu">
+        <button class="menu-item active" data-section="resumo">
+          <span>Resumo Financeiro</span>
+        </button>
+        <button class="menu-item" data-section="custos">
+          <span>Resumo dos Custos</span>
+        </button>
+        <button class="menu-item" data-section="extrato">
+          <span>Extrato de Conta Corrente</span>
+        </button>
+        <button class="menu-item" data-section="fixos">
+          <span>Custos Fixos</span>
+        </button>
+        <button class="menu-item" data-section="movimentacao">
+          <span>Adicionar Custo/Recebimento</span>
+        </button>
+        <button class="menu-item" data-section="agrupadores">
+          <span>Adicionar Cartao/Agrupador</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <p>Mes atual</p>
+        <strong id="currentMonthLabel"></strong>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Painel Principal</p>
+          <h1>Resumo do mes</h1>
+          <p class="hero-copy">
+            Veja rapidamente os totais do cartao ou agrupador, dos custos fixos e da conta corrente.
+          </p>
+        </div>
+
+        <div class="hero-actions">
+          <div class="month-switcher">
+            <button type="button" class="ghost-button" id="previousMonth">&lt;</button>
+            <div class="hero-balance">
+              <div class="balance-header">
+                <span id="balanceModeLabel">Saldo do mes</span>
+                <div class="menu-anchor">
+                  <button type="button" class="menu-toggle balance-toggle" id="balanceMenuToggle" aria-label="Abrir opcoes de saldo">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </button>
+                  <div class="dropdown-menu hidden" id="balanceMenu">
+                    <button type="button" class="dropdown-item" data-balance-mode="actual">Saldo do mes</button>
+                    <button type="button" class="dropdown-item" data-balance-mode="predicted">Saldo Previsto</button>
+                  </div>
+                </div>
+              </div>
+              <strong id="netBalance">R$ 0,00</strong>
+              <small id="balanceModeDescription"></small>
+              <small id="selectedMonthLabel"></small>
+            </div>
+            <button type="button" class="ghost-button" id="nextMonth">&gt;</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-panel visible" id="section-resumo">
+        <div class="summary-grid">
+          <article class="summary-card accent-card">
+            <div class="card-header">
+              <div>
+                <p class="card-label">Cartao / Agrupador</p>
+                <h2 id="selectedAggregatorName">Nenhum cadastrado</h2>
+              </div>
+              <span class="pill" id="selectedAggregatorType">Sem tipo</span>
+            </div>
+            <strong class="amount" id="aggregatorTotal">R$ 0,00</strong>
+            <p class="card-note">Total de custos vinculados ao cartao ou agrupador selecionado.</p>
+          </article>
+
+          <article class="summary-card">
+            <p class="card-label">Custos Fixos</p>
+            <strong class="amount" id="fixedCostsTotal">R$ 0,00</strong>
+            <p class="card-note">Despesas mensais classificadas como fixas.</p>
+          </article>
+
+          <article class="summary-card">
+            <p class="card-label">Conta Corrente</p>
+            <strong class="amount" id="checkingTotal">R$ 0,00</strong>
+            <p class="card-note">Saldo calculado por recebimentos menos saidas em conta.</p>
+          </article>
+        </div>
+
+        <div class="content-grid">
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Detalhamento</p>
+                <h3>Cartoes e agrupadores</h3>
+              </div>
+              <select id="aggregatorFilter"></select>
+            </div>
+            <div class="list" id="aggregatorList"></div>
+            <div class="subpanel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Itens Vinculados</p>
+                  <h3 id="aggregatorDetailsTitle">Lancamentos do cartao/agrupador</h3>
+                </div>
+              </div>
+              <div class="list" id="aggregatorTransactionList"></div>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Historico</p>
+                <h3>Movimentacoes do mes</h3>
+              </div>
+            </div>
+            <div class="list" id="transactionList"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section-panel" id="section-movimentacao">
+        <article class="panel form-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Cadastro</p>
+              <h3>Adicionar custo ou recebimento</h3>
+            </div>
+          </div>
+
+          <form id="transactionForm" class="form-grid">
+            <input type="hidden" name="transactionId" id="transactionId">
+            <input type="hidden" name="fixedCostId" id="fixedCostId">
+
+            <label>
+              Descricao
+              <input type="text" name="description" placeholder="Ex.: Mercado, salario, aluguel" required>
+            </label>
+
+            <label>
+              Tipo
+              <select name="kind" required>
+                <option value="expense">Custo</option>
+                <option value="income">Recebimento</option>
+              </select>
+            </label>
+
+            <label>
+              Categoria
+              <select name="category" id="transactionCategory" required></select>
+            </label>
+
+            <label>
+              Grupo Financeiro
+              <select name="bucket" id="transactionBucket" required>
+                <option value="agrupador">Cartao/Agrupador</option>
+                <option value="fixed">Custo Fixo</option>
+                <option value="checking">Conta Corrente</option>
+              </select>
+            </label>
+
+            <label>
+              Valor
+              <input type="number" name="amount" min="0.01" step="0.01" placeholder="0,00" required>
+            </label>
+
+            <label>
+              Data
+              <input type="date" name="date" required>
+            </label>
+
+            <label>
+              Cartao/Agrupador
+              <select name="aggregatorId" id="transactionAggregator"></select>
+            </label>
+
+            <label>
+              Forma de Pagamento
+              <select name="paymentMethod" id="paymentMethod" required>
+                <option value="avista">A vista</option>
+                <option value="credito">Credito</option>
+              </select>
+            </label>
+
+            <label id="installmentsField">
+              Parcelas
+              <input type="number" name="installments" id="installments" min="1" step="1" value="1">
+            </label>
+
+            <label id="futureIncomeField" class="hidden">
+              <span id="recurrenceLabel">Repetir por quantos meses</span>
+              <input type="number" name="futureIncomeMonths" id="futureIncomeMonths" min="1" step="1" value="1">
+            </label>
+
+            <div class="form-actions">
+              <button type="submit" class="primary-button" id="transactionSubmit">Salvar movimentacao</button>
+              <button type="button" class="secondary-button hidden" id="cancelEdit">Cancelar edicao</button>
+            </div>
+          </form>
+
+          <div class="subpanel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Cadastro</p>
+                <h3>Adicionar categoria</h3>
+              </div>
+            </div>
+
+            <form id="categoryForm" class="form-grid compact-grid">
+              <label>
+                Nome da categoria
+                <input type="text" name="name" placeholder="Ex.: Saude, Educacao, Viagem" required>
+              </label>
+
+              <button type="submit" class="primary-button">Salvar categoria</button>
+            </form>
+          </div>
+        </article>
+      </section>
+
+      <section class="section-panel" id="section-extrato">
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Conta Corrente</p>
+              <h3>Extrato do mes selecionado</h3>
+            </div>
+          </div>
+          <div class="summary-grid extrato-grid">
+            <article class="summary-card">
+              <p class="card-label">Recebimentos</p>
+              <strong class="amount income" id="statementIncome">R$ 0,00</strong>
+              <p class="card-note">Entradas registradas na conta corrente no mes.</p>
+            </article>
+
+            <article class="summary-card">
+              <p class="card-label">Custos</p>
+              <strong class="amount expense" id="statementExpense">R$ 0,00</strong>
+              <p class="card-note">Saidas registradas na conta corrente no mes.</p>
+            </article>
+
+            <article class="summary-card">
+              <p class="card-label">Saldo Acumulado</p>
+              <strong class="amount" id="statementBalance">R$ 0,00</strong>
+              <p class="card-note">Saldo da conta corrente ate o mes selecionado.</p>
+            </article>
+          </div>
+          <div class="list" id="statementList"></div>
+        </article>
+      </section>
+
+      <section class="section-panel" id="section-custos">
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Custos por Categoria</p>
+              <h3>Resumo visual do mes selecionado</h3>
+            </div>
+          </div>
+          <div class="cost-dashboard-grid">
+            <div class="cost-dashboard-card">
+              <div class="panel-head compact-head">
+                <div>
+                  <p class="eyebrow">Consolidado</p>
+                  <h3>Todos os cartoes</h3>
+                </div>
+              </div>
+              <div class="pie-chart-block" id="allCardsCostPie"></div>
+              <div class="chart-list" id="allCardsCostChart"></div>
+            </div>
+            <div class="cost-dashboard-card">
+              <div class="panel-head compact-head">
+                <div>
+                  <p class="eyebrow">Selecionado</p>
+                  <h3 id="selectedCostChartTitle">Cartao/Agrupador</h3>
+                </div>
+              </div>
+              <div class="pie-chart-block" id="selectedCardCostPie"></div>
+              <div class="chart-list" id="selectedCardCostChart"></div>
+            </div>
+          </div>
+          <div class="cost-dashboard-card current-account-card">
+            <div class="panel-head compact-head">
+              <div>
+                <p class="eyebrow">Conta Corrente</p>
+                <h3>Custos e recebimentos por categoria</h3>
+              </div>
+            </div>
+            <div class="cost-dashboard-grid">
+              <div>
+                <p class="mini-title">Custos</p>
+                <div class="pie-chart-block" id="checkingExpensePie"></div>
+                <div class="chart-list" id="checkingExpenseChart"></div>
+              </div>
+              <div>
+                <p class="mini-title">Recebimentos</p>
+                <div class="pie-chart-block" id="checkingIncomePie"></div>
+                <div class="chart-list" id="checkingIncomeChart"></div>
+              </div>
+            </div>
+          </div>
+          <div class="cost-dashboard-stack" id="allAggregatorCharts"></div>
+        </article>
+      </section>
+
+      <section class="section-panel" id="section-fixos">
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Custos Fixos</p>
+              <h3>Planejamento e pagamentos do mes</h3>
+            </div>
+          </div>
+          <div class="summary-grid extrato-grid">
+            <article class="summary-card">
+              <p class="card-label">Total do Mes</p>
+              <strong class="amount" id="fixedCostsMonthTotal">R$ 0,00</strong>
+              <p class="card-note">Soma dos custos fixos adicionados no mes selecionado.</p>
+            </article>
+
+            <article class="summary-card">
+              <p class="card-label">Saldo Restante</p>
+              <strong class="amount" id="fixedCostsRemainingTotal">R$ 0,00</strong>
+              <p class="card-note">Valor ainda previsto para os custos fixos do mes.</p>
+            </article>
+          </div>
+          <div class="list" id="fixedCostsList"></div>
+        </article>
+      </section>
+
+      <section class="section-panel" id="section-agrupadores">
+        <article class="panel form-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Cadastro</p>
+              <h3>Adicionar cartao ou agrupador</h3>
+            </div>
+          </div>
+
+          <form id="aggregatorForm" class="form-grid compact-grid">
+            <input type="hidden" name="aggregatorId" id="aggregatorId">
+            <label>
+              Nome
+              <input type="text" name="name" placeholder="Ex.: Nubank, Mercado, Casa" required>
+            </label>
+
+            <label>
+              Tipo
+              <select name="type" required>
+                <option value="Cartao">Cartao</option>
+                <option value="Agrupador">Agrupador</option>
+              </select>
+            </label>
+
+            <div class="form-actions">
+              <button type="submit" class="primary-button" id="aggregatorSubmit">Salvar cartao/agrupador</button>
+              <button type="button" class="secondary-button hidden" id="cancelAggregatorEdit">Cancelar edicao</button>
+            </div>
+          </form>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
