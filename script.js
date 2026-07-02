@@ -1,7 +1,7 @@
 const STORAGE_KEY = "controle-financeiro-desktop-v2";
 const LOCAL_API_STATE_URL = "/api/state";
 const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbxrIdmlnW0N9ngicZMw1utpebuW4LbAC_sn-Ut4WRCrZEgikwa7HVJvbL3xBdk57WfV/exec";
-const GOOGLE_SHEETS_TOKEN = "controle-financeiro-daniel-2026";
+const GOOGLE_SHEETS_TOKEN_STORAGE_KEY = "controle-financeiro-token";
 const REMOTE_SYNC_INTERVAL_MS = 5000;
 const DEFAULT_CATEGORIES = [
   "Alimentacao",
@@ -87,7 +87,82 @@ const elements = {
   }
 };
 
-boot();
+requestTokenAndBoot();
+
+function getGoogleSheetsToken() {
+  return localStorage.getItem(GOOGLE_SHEETS_TOKEN_STORAGE_KEY) || "";
+}
+
+function setGoogleSheetsToken(token) {
+  localStorage.setItem(GOOGLE_SHEETS_TOKEN_STORAGE_KEY, token);
+}
+
+function requestTokenAndBoot() {
+  const existingToken = getGoogleSheetsToken();
+
+  if (existingToken) {
+    boot();
+    return;
+  }
+
+  showTokenLockScreen();
+}
+
+function showTokenLockScreen() {
+  const overlay = document.createElement("div");
+  overlay.style.cssText = "position:fixed;inset:0;background:#111318;color:#f5f5f5;display:flex;align-items:center;justify-content:center;z-index:9999;font-family:system-ui,sans-serif;";
+  overlay.innerHTML = `
+    <form id="tokenLockForm" style="background:#1e2027;padding:28px;border-radius:10px;display:flex;flex-direction:column;gap:14px;min-width:280px;box-shadow:0 8px 24px rgba(0,0,0,0.4);">
+      <label for="tokenLockInput" style="font-size:14px;">Digite a senha de acesso</label>
+      <input id="tokenLockInput" type="password" autocomplete="off" style="padding:10px;border-radius:6px;border:1px solid #3a3d46;background:#111318;color:#fff;font-size:14px;" />
+      <button type="submit" style="padding:10px;border-radius:6px;border:none;background:#2563eb;color:#fff;font-size:14px;cursor:pointer;">Entrar</button>
+      <p id="tokenLockError" style="color:#f87171;font-size:12px;display:none;margin:0;">Senha incorreta ou falha na conexao. Tente novamente.</p>
+    </form>
+  `;
+  document.body.appendChild(overlay);
+
+  const form = overlay.querySelector("#tokenLockForm");
+  const input = overlay.querySelector("#tokenLockInput");
+  const errorLabel = overlay.querySelector("#tokenLockError");
+  input.focus();
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const candidate = input.value.trim();
+
+    if (!candidate) {
+      return;
+    }
+
+    const isValid = await validateToken(candidate);
+
+    if (!isValid) {
+      errorLabel.style.display = "block";
+      return;
+    }
+
+    setGoogleSheetsToken(candidate);
+    overlay.remove();
+    boot();
+  });
+}
+
+async function validateToken(candidate) {
+  try {
+    const url = new URL(GOOGLE_SHEETS_API_URL);
+    url.searchParams.set("token", candidate);
+    const response = await fetch(url.toString(), { cache: "no-store" });
+
+    if (!response.ok) {
+      return false;
+    }
+
+    const payload = await response.json();
+    return Boolean(payload?.success);
+  } catch (error) {
+    return false;
+  }
+}
 
 async function boot() {
   await hydrateState();
@@ -1827,12 +1902,12 @@ async function saveRemoteState(snapshot) {
 }
 
 function isGoogleSheetsStorageEnabled() {
-  return Boolean(GOOGLE_SHEETS_API_URL && GOOGLE_SHEETS_TOKEN);
+  return Boolean(GOOGLE_SHEETS_API_URL && getGoogleSheetsToken());
 }
 
 function googleSheetsUrl() {
   const url = new URL(GOOGLE_SHEETS_API_URL);
-  url.searchParams.set("token", GOOGLE_SHEETS_TOKEN);
+  url.searchParams.set("token", getGoogleSheetsToken());
   return url.toString();
 }
 
