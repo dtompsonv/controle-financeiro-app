@@ -1,6 +1,6 @@
 const STORAGE_KEY = "controle-financeiro-desktop-v2";
 const LOCAL_API_STATE_URL = "/api/state";
-const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbxrIdmlnW0N9ngicZMw1utpebuW4LbAC_sn-Ut4WRCrZEgikwa7HVJvbL3xBdk57WfV/exec";
+const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbzSvWW3NfJ5pLjHfizms1E04-4_W7T5xJHcL9ua3cPASv43SO0NnFMt0gxDICNJNa5Y/exec";
 const GOOGLE_SHEETS_TOKEN_STORAGE_KEY = "controle-financeiro-token";
 const REMOTE_SYNC_INTERVAL_MS = 5000;
 const DEFAULT_CATEGORIES = [
